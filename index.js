@@ -14,8 +14,8 @@ const settingsTemplate = [
     type: "enum",
     default: "page",
     title: "Random Mode",
-    description: "Page, card, tags or advanced query",
-    enumChoices: ["page", "card", "tags", "query"],
+    description: "Page, card, tags, simple query, or advanced query",
+    enumChoices: ["page", "card", "tags", "simple-query", "query"],
     enumPicker: "radio",
   },
   {
@@ -42,6 +42,14 @@ const settingsTemplate = [
       'Your custom query. e.g. [:find (pull ?b [*]) :where [?b :block/refs ?bp] [?bp :block/name "book"]]',
   },
   {
+    key: "simpleQuery",
+    type: "string",
+    default: "",
+    title: "Simple Query mode",
+    inputAs: "textarea",
+    description: 'Your simple query. e.g. (page-property :type "book")',
+  },
+  {
     key: "randomStepSize",
     type: "enum",
     default: "1",
@@ -59,7 +67,12 @@ async function openRandomNote() {
   const queryScript = getQueryScript();
   let stepSize = parseInt(logseq.settings.randomStepSize || 1);
   try {
-    let ret = await logseq.DB.datascriptQuery(queryScript);
+    let ret;
+    if (logseq.settings.randomMode === "simple-query") {
+      ret = await logseq.DB.q(queryScript);
+    } else {
+      ret = await logseq.DB.datascriptQuery(queryScript);
+    }
     const pages = ret?.flat();
     for (let i = 0; i < pages.length; i++) {
       const block = pages[i];
@@ -160,6 +173,8 @@ function getQueryScript() {
           [?bp :block/name ?name]
           [(contains? #{"card"} ?name)]]
         `;
+    case "simple-query":
+      return logseq.settings.simpleQuery;
     case "query":
       return logseq.settings.advancedQuery;
     default:
@@ -265,6 +280,25 @@ function main() {
     {
       key: "logseq-random-note:query-mode",
       label: "Random note => query mode",
+    },
+    () => {
+      logseq.updateSettings({ randomMode: "query" });
+    }
+  );
+  logseq.App.registerCommandPalette(
+    {
+      key: "logseq-random-note:simple-query-mode",
+      label: "Random note => simple query mode",
+    },
+    () => {
+      logseq.updateSettings({ randomMode: "simple-query" });
+    }
+  );
+
+  logseq.App.registerCommandPalette(
+    {
+      key: "logseq-random-note:advanced-query-mode",
+      label: "Random note => advanced query mode",
     },
     () => {
       logseq.updateSettings({ randomMode: "query" });
