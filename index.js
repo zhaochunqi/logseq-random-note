@@ -14,8 +14,8 @@ const settingsTemplate = [
     type: "enum",
     default: "page",
     title: "Random Mode",
-    description: "Page, card, tags, simple query, or advanced query",
-    enumChoices: ["page", "card", "tags", "simple-query", "query"],
+    description: "Page, card, tags, namespace, simple query, or advanced query",
+    enumChoices: ["page", "card", "tags", "namespace", "simple-query", "query"],
     enumPicker: "radio",
   },
   {
@@ -50,6 +50,13 @@ const settingsTemplate = [
     description: 'Your simple query. e.g. (page-property :type "book")',
   },
   {
+    key: "namespace",
+    type: "string",
+    default: "",
+    title: "Namespace mode",
+    description: "Enter the namespace to use for random selection",
+  },
+  {
     key: "randomStepSize",
     type: "enum",
     default: "1",
@@ -67,13 +74,17 @@ async function openRandomNote() {
   const queryScript = getQueryScript();
   let stepSize = parseInt(logseq.settings.randomStepSize || 1);
   try {
-    let ret;
-    if (logseq.settings.randomMode === "simple-query") {
-      ret = await logseq.DB.q(queryScript);
+    let pages;
+    if (logseq.settings.randomMode === "namespace") {
+      const namespace = logseq.settings.namespace;
+      pages = await logseq.Editor.getPagesFromNamespace(namespace);
+    } else if (logseq.settings.randomMode === "simple-query") {
+      pages = await logseq.DB.q(queryScript);
     } else {
-      ret = await logseq.DB.datascriptQuery(queryScript);
+      const ret = await logseq.DB.datascriptQuery(queryScript);
+      pages = ret?.flat();
     }
-    const pages = ret?.flat();
+    
     for (let i = 0; i < pages.length; i++) {
       const block = pages[i];
       if (block["pre-block?"]) {
@@ -86,7 +97,7 @@ async function openRandomNote() {
     }
   } catch (err) {
     logseq.UI.showMsg(
-      err.message || "Maybe something wrong with the query",
+      err.message || "Maybe something wrong with the query or namespace",
       "error"
     );
     console.log(err);
@@ -177,6 +188,8 @@ function getQueryScript() {
       return logseq.settings.simpleQuery;
     case "query":
       return logseq.settings.advancedQuery;
+    case "namespace":
+      return null;
     default:
       console.log("unknown");
       return defaultQuery;
@@ -302,6 +315,15 @@ function main() {
     },
     () => {
       logseq.updateSettings({ randomMode: "query" });
+    }
+  );
+  logseq.App.registerCommandPalette(
+    {
+      key: "logseq-random-note:namespace-mode",
+      label: "Random note => namespace mode",
+    },
+    () => {
+      logseq.updateSettings({ randomMode: "namespace" });
     }
   );
 }
