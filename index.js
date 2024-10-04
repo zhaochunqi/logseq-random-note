@@ -84,7 +84,7 @@ async function openRandomNote() {
       const ret = await logseq.DB.datascriptQuery(queryScript);
       pages = ret?.flat();
     }
-    
+
     for (let i = 0; i < pages.length; i++) {
       const block = pages[i];
       if (block["pre-block?"]) {
@@ -232,7 +232,11 @@ const hasRefUuid = (content) => {
 
 function main() {
   logseq.provideModel({
-    handleRandomNote() {
+    handleRandomNote: async () => {
+      for (let i = 0; i < 10; i++) {
+        openRandomNote();
+        await new Promise((resolve) => setTimeout(resolve, 5000));
+      }
       openRandomNote();
     },
   });
