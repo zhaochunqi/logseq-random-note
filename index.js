@@ -237,14 +237,26 @@ async function handleRandomNote() {
   if (isRunning) {
     clearInterval(intervalId);
     isRunning = false;
-    logseq.UI.showMsg("Stopped random note generation.", "info");
   } else {
     isRunning = true;
-    logseq.UI.showMsg("Started random note generation.", "info");
     intervalId = setInterval(() => {
       openRandomNote();
     }, 5000); // Adjust the interval as needed
   }
+  registerRandomNoteToolbar(isRunning)
+}
+
+function registerRandomNoteToolbar(isRunning) {
+  logseq.App.registerUIItem("toolbar", {
+    key: "RandomNote",
+    template: `
+      <span class="logseq-random-note-toolbar">
+        <a title="I'm Feeling Lucky(r n)" class="button" data-on-click="handleRandomNote">
+          <i id="random-note-icon" class="ti ti-windmill ${isRunning ? ' rotate' : ''}"></i>
+        </a>
+      </span>
+    `,
+  });
 }
 
 function main() {
@@ -252,16 +264,23 @@ function main() {
     handleRandomNote,
   });
 
-  logseq.App.registerUIItem("toolbar", {
-    key: "RandomNote",
-    template: `
-      <span class="logseq-random-note-toolbar">
-        <a title="I'm Feeling Lucky(r n)" class="button" data-on-click="handleRandomNote">
-          <i class="ti ti-windmill"></i>
-        </a>
-      </span>
-    `,
-  });
+  logseq.provideStyle(`
+       /* 旋转动画 */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .rotate {
+            display: inline-block; /* 确保动画应用于图标本身 */
+            animation: rotate 5s linear infinite;
+        }
+        /* 悬停时暂停动画 */
+        .rotate:hover {
+            animation-play-state: paused;
+        }
+  `);
+
+  registerRandomNoteToolbar(false); // Initially not running
 
   logseq.App.registerCommandPalette(
     {
