@@ -239,6 +239,7 @@ async function handleRandomNote() {
     isRunning = false;
   } else {
     isRunning = true;
+    openRandomNote(); // Immediately open a random note
     intervalId = setInterval(() => {
       openRandomNote();
     }, 5000); // Adjust the interval as needed
