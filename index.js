@@ -230,15 +230,26 @@ const hasRefUuid = (content) => {
   return !!content && content.indexOf("((") > -1 && content.indexOf("))") > -1;
 };
 
+let isRunning = false;
+let intervalId = null;
+
+async function handleRandomNote() {
+  if (isRunning) {
+    clearInterval(intervalId);
+    isRunning = false;
+    logseq.UI.showMsg("Stopped random note generation.", "info");
+  } else {
+    isRunning = true;
+    logseq.UI.showMsg("Started random note generation.", "info");
+    intervalId = setInterval(() => {
+      openRandomNote();
+    }, 5000); // Adjust the interval as needed
+  }
+}
+
 function main() {
   logseq.provideModel({
-    handleRandomNote: async () => {
-      for (let i = 0; i < 10; i++) {
-        openRandomNote();
-        await new Promise((resolve) => setTimeout(resolve, 5000));
-      }
-      openRandomNote();
-    },
+    handleRandomNote,
   });
 
   logseq.App.registerUIItem("toolbar", {
