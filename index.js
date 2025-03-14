@@ -66,6 +66,15 @@ const settingsTemplate = [
     enumChoices: ["1", "3", "5", "7", "10"],
     enumPicker: "radio",
   },
+  {
+    key: "randomInterval",
+    type: "enum",
+    default: "5",
+    title: "随机切换间隔",
+    description: "自动随机切换笔记的时间间隔（秒）",
+    enumChoices: ["3", "5", "10", "15", "30"],
+    enumPicker: "radio",
+  },
 ];
 
 logseq.useSettingsSchema(settingsTemplate);
@@ -239,10 +248,12 @@ async function handleRandomNote() {
     isRunning = false;
   } else {
     isRunning = true;
+    // 更新旋转动画样式，确保与当前设置的时间间隔同步
+    updateRotateStyle();
     openRandomNote(); // Immediately open a random note
     intervalId = setInterval(() => {
       openRandomNote();
-    }, 5000); // Adjust the interval as needed
+    }, parseInt(logseq.settings.randomInterval || 5) * 1000);
   }
   registerRandomNoteToolbar(isRunning)
 }
@@ -260,26 +271,33 @@ function registerRandomNoteToolbar(isRunning) {
   });
 }
 
+// 动态生成CSS样式，使旋转动画时间与随机切换时间保持一致
+function updateRotateStyle() {
+  const intervalSeconds = parseInt(logseq.settings.randomInterval || 5);
+  logseq.provideStyle(`
+     /* 旋转动画 */
+      @keyframes rotate {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+      }
+      .rotate {
+          display: inline-block; /* 确保动画应用于图标本身 */
+          animation: rotate ${intervalSeconds}s linear infinite;
+      }
+      /* 悬停时暂停动画 */
+      .rotate:hover {
+          animation-play-state: paused;
+      }
+  `);
+}
+
 function main() {
   logseq.provideModel({
     handleRandomNote,
   });
 
-  logseq.provideStyle(`
-       /* 旋转动画 */
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        .rotate {
-            display: inline-block; /* 确保动画应用于图标本身 */
-            animation: rotate 5s linear infinite;
-        }
-        /* 悬停时暂停动画 */
-        .rotate:hover {
-            animation-play-state: paused;
-        }
-  `);
+  // 初始化样式
+  updateRotateStyle();
 
   registerRandomNoteToolbar(false); // Initially not running
 
@@ -361,6 +379,21 @@ function main() {
       logseq.updateSettings({ randomMode: "namespace" });
     }
   );
+
+  // 监听设置变更，当随机间隔改变时更新动画样式
+  logseq.onSettingsChanged((newSettings, oldSettings) => {
+    if (newSettings.randomInterval !== oldSettings.randomInterval) {
+      updateRotateStyle();
+      
+      // 如果正在运行中，重新启动定时器以应用新的时间间隔
+      if (isRunning) {
+        clearInterval(intervalId);
+        intervalId = setInterval(() => {
+          openRandomNote();
+        }, parseInt(newSettings.randomInterval || 5) * 1000);
+      }
+    }
+  });
 }
 
 logseq.ready(main).catch(console.error);

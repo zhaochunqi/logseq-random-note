@@ -1,6 +1,6 @@
 {
   "name": "logseq-random-note",
-  "version": "1.1.11",
+  "version": "1.1.12",
   "author": "TankCool",
   "main": "dist/index.html",
   "description": "Random walk through your Logseq notes.",
@@ -22,5 +22,13 @@
   "license": "MIT",
   "browserslist": [
     "chrome 80"
-  ]
+  ],
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "core-js",
+      "deasync",
+      "fsevents",
+      "parcel-bundler"
+    ]
+  }
 }
