@@ -72,7 +72,7 @@ const settingsTemplate = [
     default: "5",
     title: "随机切换间隔",
     description: "自动随机切换笔记的时间间隔（秒）",
-    enumChoices: ["3", "5", "10", "15", "30"],
+    enumChoices: ["3", "5", "10", "15", "30", "60", "70", "80"],
     enumPicker: "radio",
   },
 ];
